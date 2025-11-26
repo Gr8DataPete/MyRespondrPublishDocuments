@@ -4,6 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "npx http-server ./ -p 5173",
-    "start-ui": "npx http-server ./ -p 5173"
+    "start-ui": "npx http-server ./ -p 5173",
+    "format": "npx prettier --write .",
+    "format:check": "npx prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^2.8.8"
   }
 }

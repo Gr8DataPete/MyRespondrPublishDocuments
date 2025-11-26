@@ -1,27 +1,71 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Upload Document — Sign In</title>
     <style>
-      body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:#f7fafc; color:#0f172a; }
-      .card { max-width:640px; margin:48px auto; background:white; padding:20px; border-radius:8px; box-shadow:0 6px 20px rgba(2,6,23,0.08); }
-      label { display:block; margin-top:12px; font-weight:600; color:#0f172a }
-      input[type="email"], input[type="password"], input[type="file"] { width:100%; padding:8px; margin-top:6px; box-sizing:border-box }
-      button { padding:8px 12px; border:none; background:#2563eb; color:white; border-radius:6px; cursor:pointer }
-      button[disabled] { opacity:0.6; cursor:default }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+        background: #f7fafc;
+        color: #0f172a;
+      }
+      .card {
+        max-width: 640px;
+        margin: 48px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
+      }
+      label {
+        display: block;
+        margin-top: 12px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      input[type="email"],
+      input[type="password"],
+      input[type="file"] {
+        width: 100%;
+        padding: 8px;
+        margin-top: 6px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 12px;
+        border: none;
+        background: #2563eb;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button[disabled] {
+        opacity: 0.6;
+        cursor: default;
+      }
     </style>
   </head>
   <body>
     <div class="card">
       <h2>Organization Sign In (Upload Document UI)</h2>
-      <p style="color:#475569">Enter Supabase connection and credentials to sign in and print the organization id.</p>
+      <p style="color: #475569">
+        Enter Supabase connection and credentials to sign in and print the
+        organization id.
+      </p>
 
       <label>Supabase URL</label>
       <label>Supabase Anon Key</label>
       <div id="supabase-config-area">
-        <p style="margin:0 0 8px 0;color:#475569">Supabase configuration is loaded from local `.env`.</p>
-        <div id="supabase-config-status" style="font-size:13px;color:#334155">(loading config...)</div>
+        <p style="margin: 0 0 8px 0; color: #475569">
+          Supabase configuration is loaded from local `.env`.
+        </p>
+        <div
+          id="supabase-config-status"
+          style="font-size: 13px; color: #334155"
+        >
+          (loading config...)
+        </div>
       </div>
 
       <label>Email</label>
@@ -30,21 +74,26 @@
       <label>Password</label>
       <input id="password" type="password" placeholder="password" />
 
-      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-top: 12px"
+      >
         <button id="signin">Sign in</button>
-        <button id="clear" style="background:#475569">Clear</button>
+        <button id="clear" style="background: #475569">Clear</button>
       </div>
 
-      <div id="status" style="margin-top:16px"></div>
+      <div id="status" style="margin-top: 16px"></div>
 
-      <div id="home" style="display:none; margin-top:18px">
+      <div id="home" style="display: none; margin-top: 18px">
         <h3 id="greeting"></h3>
-        <div style="margin-top:12px">
+        <div style="margin-top: 12px">
           <label>Upload Document</label>
           <input id="uploadFile" type="file" />
-          <div style="margin-top:8px">
+          <div style="margin-top: 8px">
             <button id="uploadBtn">Upload</button>
-            <span id="uploadStatus" style="margin-left:8px;color:#334155"></span>
+            <span
+              id="uploadStatus"
+              style="margin-left: 8px; color: #334155"
+            ></span>
           </div>
         </div>
       </div>
@@ -52,167 +101,247 @@
 
     <script src="./env-config.js"></script>
     <script>
-      const el = id => document.getElementById(id)
-      const status = el('status')
+      const el = (id) => document.getElementById(id);
+      const status = el("status");
 
       // Display config status from generated env-config
       try {
-        const statusEl = el('supabase-config-status')
+        const statusEl = el("supabase-config-status");
         // API base for separate frontend/backend
-        const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
-        if (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.SUPABASE_URL && window.__UPLOAD_DOC_ENV.SUPABASE_KEY) {
-          statusEl.textContent = 'Using configuration from env-config.js. Supabase URL and Key hidden.'
+        const API_BASE =
+          (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || "";
+        if (
+          window.__UPLOAD_DOC_ENV &&
+          window.__UPLOAD_DOC_ENV.SUPABASE_URL &&
+          window.__UPLOAD_DOC_ENV.SUPABASE_KEY
+        ) {
+          statusEl.textContent =
+            "Using configuration from env-config.js. Supabase URL and Key hidden.";
         } else {
-          statusEl.textContent = 'No Supabase configuration found. Please generate env-config.js or provide SUPABASE_URL and SUPABASE_KEY.'
+          statusEl.textContent =
+            "No Supabase configuration found. Please generate env-config.js or provide SUPABASE_URL and SUPABASE_KEY.";
         }
       } catch (e) {
         // ignore
       }
 
-      el('signin').addEventListener('click', async () => {
-        status.textContent = ''
+      el("signin").addEventListener("click", async () => {
+        status.textContent = "";
         // update status area (avoid using undefined variables)
-        status.textContent = '(working...)'
+        status.textContent = "(working...)";
 
-        const email = el('email').value.trim()
-        const password = el('password').value
+        const email = el("email").value.trim();
+        const password = el("password").value;
 
         if (!email || !password) {
-          status.textContent = 'Please provide Email and Password.'
-          return
+          status.textContent = "Please provide Email and Password.";
+          return;
         }
 
         try {
-          status.textContent = 'Signing in (server)...'
-          console.log('[upload_document frontend] Sending /api/signin request', { email })
+          status.textContent = "Signing in (server)...";
+          console.log(
+            "[upload_document frontend] Sending /api/signin request",
+            { email }
+          );
           // Use configured API base when present so frontend can run separately from backend
-          const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
-          const resp = await fetch(API_BASE + '/api/signin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          })
+          const API_BASE =
+            (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || "";
+          const resp = await fetch(API_BASE + "/api/signin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
 
-          let data = null
+          let data = null;
           try {
-            data = await resp.json()
+            data = await resp.json();
           } catch (e) {
-            console.warn('[upload_document frontend] /api/signin returned non-JSON response', e)
+            console.warn(
+              "[upload_document frontend] /api/signin returned non-JSON response",
+              e
+            );
           }
 
-          console.log('[upload_document frontend] /api/signin response', { status: resp.status, data })
+          console.log("[upload_document frontend] /api/signin response", {
+            status: resp.status,
+            data,
+          });
 
           if (!resp.ok) {
-            status.textContent = (data && data.error) ? data.error : `Sign-in failed (status ${resp.status})`
-            return
+            status.textContent =
+              data && data.error
+                ? data.error
+                : `Sign-in failed (status ${resp.status})`;
+            return;
           }
 
           // Move to home view; server returns user, org_id and session
-          status.textContent = `Signed in as ${data.user?.email || data.user?.id} (org: ${data.org_id || 'n/a'})`
-          sessionStorage.setItem('upload_user', JSON.stringify(data.user || {}))
-          sessionStorage.setItem('upload_org', data.org_id || '')
-          if (data.session) sessionStorage.setItem('upload_session', JSON.stringify(data.session))
-          console.log('[upload_document frontend] sign-in response', data)
-          showHome(data.user)
+          status.textContent = `Signed in as ${
+            data.user?.email || data.user?.id
+          } (org: ${data.org_id || "n/a"})`;
+          sessionStorage.setItem(
+            "upload_user",
+            JSON.stringify(data.user || {})
+          );
+          sessionStorage.setItem("upload_org", data.org_id || "");
+          if (data.session)
+            sessionStorage.setItem(
+              "upload_session",
+              JSON.stringify(data.session)
+            );
+          console.log("[upload_document frontend] sign-in response", data);
+          showHome(data.user);
         } catch (err) {
-          console.error('[upload_document frontend] Unexpected error in sign-in flow', err)
-          status.textContent = 'Network or client error. See console for details.'
+          console.error(
+            "[upload_document frontend] Unexpected error in sign-in flow",
+            err
+          );
+          status.textContent =
+            "Network or client error. See console for details.";
         }
-      })
+      });
 
-      el('clear').addEventListener('click', () => {
-        el('email').value = ''
-        el('password').value = ''
-        el('status').textContent = ''
-      })
+      el("clear").addEventListener("click", () => {
+        el("email").value = "";
+        el("password").value = "";
+        el("status").textContent = "";
+      });
 
       function showHome(user) {
         // hide login inputs
-        document.querySelectorAll('label, #email, #password, #signin, #clear, #supabase-config-area').forEach(e => { if (e) e.style.display = 'none' })
+        document
+          .querySelectorAll(
+            "label, #email, #password, #signin, #clear, #supabase-config-area"
+          )
+          .forEach((e) => {
+            if (e) e.style.display = "none";
+          });
         // show home
-        const home = el('home')
-        const greet = el('greeting')
-        greet.textContent = 'Hi ' + (user?.email || user?.id || 'User')
-        home.style.display = 'block'
+        const home = el("home");
+        const greet = el("greeting");
+        greet.textContent = "Hi " + (user?.email || user?.id || "User");
+        home.style.display = "block";
 
         // wire upload
-        el('uploadBtn').addEventListener('click', async () => {
-          const fileInput = el('uploadFile')
-          const uploadStatus = el('uploadStatus')
-          uploadStatus.textContent = ''
+        el("uploadBtn").addEventListener("click", async () => {
+          const fileInput = el("uploadFile");
+          const uploadStatus = el("uploadStatus");
+          uploadStatus.textContent = "";
           if (!fileInput.files || fileInput.files.length === 0) {
-            uploadStatus.textContent = 'Please choose a file.'
-            return
+            uploadStatus.textContent = "Please choose a file.";
+            return;
           }
-          const file = fileInput.files[0]
-          const form = new FormData()
-          form.append('file', file, file.name)
-          form.append('description', 'Uploaded from UI')
+          const file = fileInput.files[0];
+          const form = new FormData();
+          form.append("file", file, file.name);
+          form.append("description", "Uploaded from UI");
           // attach user and org IDs so the server can persist metadata
           try {
-            const user = JSON.parse(sessionStorage.getItem('upload_user') || '{}')
-            const org = sessionStorage.getItem('upload_org') || ''
-            if (user && user.id) form.append('user_id', user.id)
-            if (org) form.append('org_id', org)
-            console.log('[upload_document frontend] attaching user/org to upload', { user_id: user?.id, org_id: org })
+            const user = JSON.parse(
+              sessionStorage.getItem("upload_user") || "{}"
+            );
+            const org = sessionStorage.getItem("upload_org") || "";
+            if (user && user.id) form.append("user_id", user.id);
+            if (org) form.append("org_id", org);
+            console.log(
+              "[upload_document frontend] attaching user/org to upload",
+              { user_id: user?.id, org_id: org }
+            );
           } catch (e) {
-            console.warn('[upload_document frontend] failed to attach user/org to upload', e)
+            console.warn(
+              "[upload_document frontend] failed to attach user/org to upload",
+              e
+            );
           }
 
-          uploadStatus.textContent = 'Uploading...'
+          uploadStatus.textContent = "Uploading...";
           try {
-            const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
+            const API_BASE =
+              (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) ||
+              "";
             // Attach Authorization header if we have a session access token
-            const storedSession = (window.sessionStorage && sessionStorage.getItem('upload_session')) ? JSON.parse(sessionStorage.getItem('upload_session')) : null
-            const accessToken = storedSession?.access_token || storedSession?.accessToken || null
-            const headers = {}
-            if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+            const storedSession =
+              window.sessionStorage && sessionStorage.getItem("upload_session")
+                ? JSON.parse(sessionStorage.getItem("upload_session"))
+                : null;
+            const accessToken =
+              storedSession?.access_token || storedSession?.accessToken || null;
+            const headers = {};
+            if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
             // DEBUG: log what we're about to send (headers, form keys, file metadata)
             try {
-              const keys = Array.from(form.keys())
-              const fileMeta = { name: file.name, size: file.size, type: file.type }
-              console.log('[upload_document frontend] DEBUG send', { API_BASE, headers, formKeys: keys, file: fileMeta, storedSession })
+              const keys = Array.from(form.keys());
+              const fileMeta = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              };
+              console.log("[upload_document frontend] DEBUG send", {
+                API_BASE,
+                headers,
+                formKeys: keys,
+                file: fileMeta,
+                storedSession,
+              });
             } catch (e) {
-              console.warn('[upload_document frontend] DEBUG failed to enumerate form/file', e)
+              console.warn(
+                "[upload_document frontend] DEBUG failed to enumerate form/file",
+                e
+              );
             }
 
-            const resp = await fetch(API_BASE + '/api/organizations/me/documents', {
-              method: 'POST',
-              body: form,
-              credentials: 'include',
-              headers
-            })
+            const resp = await fetch(
+              API_BASE + "/api/organizations/me/documents",
+              {
+                method: "POST",
+                body: form,
+                credentials: "include",
+                headers,
+              }
+            );
 
             // Always read response text for debugging, then try parse JSON
-            let respText = ''
+            let respText = "";
             try {
-              respText = await resp.text()
+              respText = await resp.text();
             } catch (e) {
-              console.warn('[upload_document frontend] failed to read response text', e)
+              console.warn(
+                "[upload_document frontend] failed to read response text",
+                e
+              );
             }
-            let data = null
+            let data = null;
             try {
-              data = respText ? JSON.parse(respText) : null
+              data = respText ? JSON.parse(respText) : null;
             } catch (e) {
-              data = null
+              data = null;
             }
 
-            console.log('[upload_document frontend] upload response', { status: resp.status, text: respText, json: data })
+            console.log("[upload_document frontend] upload response", {
+              status: resp.status,
+              text: respText,
+              json: data,
+            });
 
             if (!resp.ok) {
               // prefer server-provided message in text or JSON
-              if (data && data.error) uploadStatus.textContent = String(data.error)
-              else if (respText) uploadStatus.textContent = respText
-              else uploadStatus.textContent = `Upload failed (status ${resp.status})`
+              if (data && data.error)
+                uploadStatus.textContent = String(data.error);
+              else if (respText) uploadStatus.textContent = respText;
+              else
+                uploadStatus.textContent = `Upload failed (status ${resp.status})`;
             } else {
-              uploadStatus.textContent = 'Uploaded: ' + (data?.document_id || 'ok')
+              uploadStatus.textContent =
+                "Uploaded: " + (data?.document_id || "ok");
             }
           } catch (e) {
-            console.error('[upload_document frontend] fetch/exception', e)
-            uploadStatus.textContent = 'Upload error: ' + (e && e.message ? e.message : String(e))
+            console.error("[upload_document frontend] fetch/exception", e);
+            uploadStatus.textContent =
+              "Upload error: " + (e && e.message ? e.message : String(e));
           }
-        })
+        });
       }
     </script>
   </body>

@@ -5,7 +5,7 @@ import React, { useState } from "react";
 
 export default function OrganizationDocumentUploader() {
   // Read API base from injected env-config at runtime so frontend can talk to a separate backend
-  const API_BASE = (window as any).__UPLOAD_DOC_ENV?.API_URL || ''
+  const API_BASE = (window as any).__UPLOAD_DOC_ENV?.API_URL || "";
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -29,10 +29,14 @@ export default function OrganizationDocumentUploader() {
       form.append("description", "Uploaded from OrganizationDocumentUploader");
 
       // Attach Authorization header with access token if present in session
-      const storedSession = (window.sessionStorage && sessionStorage.getItem('upload_session')) ? JSON.parse(sessionStorage.getItem('upload_session') || '{}') : null
-      const accessToken = storedSession?.access_token || storedSession?.accessToken || null
-      const headers: Record<string, string> = {}
-      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+      const storedSession =
+        window.sessionStorage && sessionStorage.getItem("upload_session")
+          ? JSON.parse(sessionStorage.getItem("upload_session") || "{}")
+          : null;
+      const accessToken =
+        storedSession?.access_token || storedSession?.accessToken || null;
+      const headers: Record<string, string> = {};
+      if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
       const resp = await fetch(`${API_BASE}/api/organizations/me/documents`, {
         method: "POST",
@@ -41,21 +45,25 @@ export default function OrganizationDocumentUploader() {
         headers,
       });
 
-      let data: any = null
-      let text: string | null = null
+      let data: any = null;
+      let text: string | null = null;
       try {
-        data = await resp.json()
+        data = await resp.json();
       } catch (e) {
-        text = await resp.text().catch(() => null)
-        console.warn('Non-JSON upload response', e)
+        text = await resp.text().catch(() => null);
+        console.warn("Non-JSON upload response", e);
       }
-      console.log('[OrganizationDocumentUploader] upload response', { status: resp.status, data, text })
+      console.log("[OrganizationDocumentUploader] upload response", {
+        status: resp.status,
+        data,
+        text,
+      });
       if (!resp.ok) {
-        if (data && data.error) setError(String(data.error))
-        else if (text) setError(text)
-        else setError(`Upload failed (status ${resp.status})`)
+        if (data && data.error) setError(String(data.error));
+        else if (text) setError(text);
+        else setError(`Upload failed (status ${resp.status})`);
       } else {
-        setResult(data)
+        setResult(data);
       }
     } catch (e: any) {
       setError(e.message || String(e));
@@ -82,8 +90,11 @@ export default function OrganizationDocumentUploader() {
         <div style={{ color: "green", marginTop: 12 }}>
           <div>Uploaded document id: {result.document_id}</div>
           <div>
-            Public URL: {result.public_url ? (
-              <a href={result.public_url} target="_blank" rel="noreferrer">Open</a>
+            Public URL:{" "}
+            {result.public_url ? (
+              <a href={result.public_url} target="_blank" rel="noreferrer">
+                Open
+              </a>
             ) : (
               "(no public url)"
             )}

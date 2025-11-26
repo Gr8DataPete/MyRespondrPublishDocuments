@@ -27,9 +27,20 @@ local_origins = [
     "http://localhost:5000",
     "http://127.0.0.1:5000",
 ]
-CORS(app, resources={r"/api/*": {"origins": local_origins}}, supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "apikey", "X-Requested-With", "Accept"],
-     expose_headers=["Content-Type", "Authorization", "apikey"])
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": local_origins}},
+    supports_credentials=True,
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "apikey",
+        "X-Requested-With",
+        "Accept",
+    ],
+    expose_headers=["Content-Type", "Authorization", "apikey"],
+)
 
 # Configure structured logging to stdout for local development and CI
 logging.basicConfig(
