@@ -12,6 +12,7 @@ prefers `SUPABASE_UPLOAD_URL`/`SUPABASE_UPLOAD_KEY` for storage operations and
 NOTE: Using the service role key in server-side code is acceptable for
 trusted backend environments. Do NOT expose service-role keys to browsers.
 """
+
 import os
 import requests
 import json
@@ -25,12 +26,20 @@ logger = logging.getLogger(__name__)
 
 
 def _supabase_base():
-    return os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_URL_DEV") or os.getenv("SUPABASE_URL_PROD")
+    return (
+        os.getenv("SUPABASE_URL")
+        or os.getenv("SUPABASE_URL_DEV")
+        or os.getenv("SUPABASE_URL_PROD")
+    )
 
 
 def _supabase_key():
     # Prefer an explicit server key (service role / upload key)
-    return os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_KEY_DEV") or os.getenv("SUPABASE_KEY_PROD")
+    return (
+        os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_KEY_DEV")
+        or os.getenv("SUPABASE_KEY_PROD")
+    )
 
 
 def _upload_base():
@@ -83,7 +92,11 @@ def upload_file_to_storage(bucket, storage_path, content, content_type):
     upload_key = _upload_key()
 
     # Ensure bytes
-    data = content if isinstance(content, (bytes, bytearray)) else (content.encode("utf-8") if content is not None else b"")
+    data = (
+        content
+        if isinstance(content, (bytes, bytearray))
+        else (content.encode("utf-8") if content is not None else b"")
+    )
 
     if upload_base and upload_key:
         try:
@@ -98,10 +111,14 @@ def upload_file_to_storage(bucket, storage_path, content, content_type):
             resp = requests.put(url, headers=headers, data=data, timeout=15)
             if 200 <= resp.status_code < 300:
                 # Public URL pattern (public path)
-                public_url = f"{upload_base}/storage/v1/object/public/{bucket}/{storage_path}"
+                public_url = (
+                    f"{upload_base}/storage/v1/object/public/{bucket}/{storage_path}"
+                )
                 return public_url, None
             # Log and surface error details for easier debugging
-            logger.error("Supabase storage upload failed: %s %s", resp.status_code, resp.text)
+            logger.error(
+                "Supabase storage upload failed: %s %s", resp.status_code, resp.text
+            )
             return None, f"Storage upload failed: {resp.status_code} {resp.text}"
         except Exception as e:
             logger.exception("Exception during Supabase storage upload: %s", e)
@@ -142,12 +159,18 @@ def add_organization_document(doc_record):
     }
     # Log which Supabase base/key we are using for the insert (do not print full key)
     try:
-        logger.info("add_organization_document using base=%s (key_preview=%s...)", base, (key[:12] if key else None))
+        logger.info(
+            "add_organization_document using base=%s (key_preview=%s...)",
+            base,
+            (key[:12] if key else None),
+        )
     except Exception:
         pass
     try:
         # Try sending as an array (bulk insert) first — some clients use this pattern
-        resp = requests.post(url, headers=headers, data=json.dumps([doc_record]), timeout=10)
+        resp = requests.post(
+            url, headers=headers, data=json.dumps([doc_record]), timeout=10
+        )
         if 200 <= resp.status_code < 300:
             try:
                 return SimpleNamespace(data=resp.json())
@@ -157,20 +180,30 @@ def add_organization_document(doc_record):
         # Log failure details for debugging
         try:
             logger = logging.getLogger(__name__)
-            logger.error("PostgREST insert failed (array body): %s %s", resp.status_code, resp.text)
+            logger.error(
+                "PostgREST insert failed (array body): %s %s",
+                resp.status_code,
+                resp.text,
+            )
         except Exception:
             pass
 
         # Fallback: try sending a single object (some PostgREST setups prefer this)
         try:
-            resp2 = requests.post(url, headers=headers, data=json.dumps(doc_record), timeout=10)
+            resp2 = requests.post(
+                url, headers=headers, data=json.dumps(doc_record), timeout=10
+            )
             if 200 <= resp2.status_code < 300:
                 try:
                     return SimpleNamespace(data=resp2.json())
                 except Exception:
                     return SimpleNamespace(data=None)
             try:
-                logger.error("PostgREST insert failed (single object): %s %s", resp2.status_code, resp2.text)
+                logger.error(
+                    "PostgREST insert failed (single object): %s %s",
+                    resp2.status_code,
+                    resp2.text,
+                )
             except Exception:
                 pass
         except Exception:
@@ -179,7 +212,9 @@ def add_organization_document(doc_record):
         return SimpleNamespace(data=None)
     except Exception as e:
         try:
-            logging.getLogger(__name__).exception("Exception during add_organization_document: %s", e)
+            logging.getLogger(__name__).exception(
+                "Exception during add_organization_document: %s", e
+            )
         except Exception:
             pass
         return SimpleNamespace(data=None)

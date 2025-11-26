@@ -8,6 +8,7 @@ This is a lightweight scaffold demonstrating how to:
 
 Integrate this blueprint in your main Flask app (register the blueprint).
 """
+
 from flask import Blueprint, request, jsonify
 import logging
 import uuid
@@ -23,7 +24,11 @@ upload_bp = Blueprint("upload_document", __name__)
 
 # Default bucket name for organization documents
 # Prefer the explicit SUPABASE_UPLOAD_BUCKET if provided in .env
-DEFAULT_BUCKET = os.getenv("SUPABASE_UPLOAD_BUCKET") or os.getenv("ORG_DOCUMENT_BUCKET") or "organization-documents"
+DEFAULT_BUCKET = (
+    os.getenv("SUPABASE_UPLOAD_BUCKET")
+    or os.getenv("ORG_DOCUMENT_BUCKET")
+    or "organization-documents"
+)
 # Server-side validations
 # Max upload size: 10 MB by default (can be overridden by ORG_DOC_MAX_BYTES env var)
 MAX_FILE_SIZE_BYTES = int(os.getenv("ORG_DOC_MAX_BYTES", str(10 * 1024 * 1024)))
@@ -92,8 +97,13 @@ def upload_organization_document():
         if auth_present:
             ah = request.headers.get("Authorization")
             auth_preview = ah[:32] + "..." if len(ah) > 36 else ah
-        logger.info("Upload summary: Authorization present=%s, Authorization_preview=%s, Content-Type=%s, Content-Length=%s",
-                    auth_present, auth_preview, content_type_hdr, content_len)
+        logger.info(
+            "Upload summary: Authorization present=%s, Authorization_preview=%s, Content-Type=%s, Content-Length=%s",
+            auth_present,
+            auth_preview,
+            content_type_hdr,
+            content_len,
+        )
     except Exception:
         logger.exception("Failed to emit upload summary info")
     # Optional detailed request dump for debugging upload/client issues.
@@ -107,10 +117,15 @@ def upload_organization_document():
             # Log limited headers (avoid printing secrets fully)
             auth_header = request.headers.get("Authorization")
             if auth_header:
-                short_auth = auth_header[:20] + "..." if len(auth_header) > 24 else auth_header
+                short_auth = (
+                    auth_header[:20] + "..." if len(auth_header) > 24 else auth_header
+                )
             else:
                 short_auth = None
-            hdrs = {k: (short_auth if k.lower() == "authorization" else v) for k, v in request.headers.items()}
+            hdrs = {
+                k: (short_auth if k.lower() == "authorization" else v)
+                for k, v in request.headers.items()
+            }
             logger.debug("Upload request headers (partial): %s", hdrs)
 
             # Log form keys
@@ -143,7 +158,11 @@ def upload_organization_document():
                             fs.stream = BytesIO(data if data is not None else b"")
                         except Exception:
                             size = None
-                    files_info[name] = {"filename": filename, "content_type": ctype, "size": size}
+                    files_info[name] = {
+                        "filename": filename,
+                        "content_type": ctype,
+                        "size": size,
+                    }
                 except Exception as e:
                     files_info[name] = {"error": str(e)}
             logger.debug("Upload request files: %s", files_info)
@@ -158,10 +177,14 @@ def upload_organization_document():
         # Resolve organization for user
         org_id = _resolve_org_id_from_user()
         if not org_id:
-            return jsonify({"error": "User is not associated with an organization"}), 403
+            return jsonify(
+                {"error": "User is not associated with an organization"}
+            ), 403
 
         if "file" not in request.files:
-            return jsonify({"error": "No file uploaded (field name must be 'file')"}), 400
+            return jsonify(
+                {"error": "No file uploaded (field name must be 'file')"}
+            ), 400
 
         file = request.files["file"]
         filename = file.filename or "uploaded"
@@ -170,10 +193,12 @@ def upload_organization_document():
         # Validate MIME type
         if content_type not in ALLOWED_MIME_TYPES:
             return (
-                jsonify({
-                    "error": "Unsupported media type",
-                    "detail": f"Uploaded MIME type '{content_type}' is not allowed",
-                }),
+                jsonify(
+                    {
+                        "error": "Unsupported media type",
+                        "detail": f"Uploaded MIME type '{content_type}' is not allowed",
+                    }
+                ),
                 415,
             )
 
@@ -198,15 +223,17 @@ def upload_organization_document():
 
         if filesize > MAX_FILE_SIZE_BYTES:
             return (
-                jsonify({
-                    "error": "File too large",
-                    "detail": f"Files must be <= {MAX_FILE_SIZE_BYTES} bytes",
-                }),
+                jsonify(
+                    {
+                        "error": "File too large",
+                        "detail": f"Files must be <= {MAX_FILE_SIZE_BYTES} bytes",
+                    }
+                ),
                 413,
             )
 
         # If we haven't read content yet, read it now
-        if 'content' not in locals():
+        if "content" not in locals():
             content = file.read()
 
         # Generate a stable document UUID
@@ -229,7 +256,7 @@ def upload_organization_document():
         try:
             sample = None
             if isinstance(content, (bytes, bytearray)) and len(content) > 0:
-                sample = base64.b64encode(content[:256]).decode('ascii')
+                sample = base64.b64encode(content[:256]).decode("ascii")
         except Exception:
             sample = None
 
@@ -240,18 +267,24 @@ def upload_organization_document():
         try:
             summary_lines = []
             summary_lines.append(f"{GREEN}Upload Debug Summary{RESET}")
-            summary_lines.append(f"  User ID: {GREEN}{form_items.get('user_id') or getattr(user_resp.user, 'id', None)}{RESET}")
+            summary_lines.append(
+                f"  User ID: {GREEN}{form_items.get('user_id') or getattr(user_resp.user, 'id', None)}{RESET}"
+            )
             summary_lines.append(f"  Org ID: {GREEN}{org_id}{RESET}")
             summary_lines.append(f"  Doc ID: {GREEN}{doc_id}{RESET}")
             summary_lines.append(f"  Filename: {GREEN}{filename}{RESET}")
             summary_lines.append(f"  Storage Path: {GREEN}{storage_path}{RESET}")
             summary_lines.append(f"  Content-Type: {GREEN}{content_type}{RESET}")
-            summary_lines.append(f"  File Size: {GREEN}{len(content) if content is not None else 'n/a'} bytes{RESET}")
+            summary_lines.append(
+                f"  File Size: {GREEN}{len(content) if content is not None else 'n/a'} bytes{RESET}"
+            )
             if sample:
-                summary_lines.append(f"  File sample (base64, first 256 bytes): {GREEN}{sample}{RESET}")
+                summary_lines.append(
+                    f"  File sample (base64, first 256 bytes): {GREEN}{sample}{RESET}"
+                )
             if form_items:
                 summary_lines.append(f"  Other form fields: {GREEN}{form_items}{RESET}")
-            logger.info('\n'.join(summary_lines))
+            logger.info("\n".join(summary_lines))
         except Exception:
             logger.exception("Failed to log upload debug summary")
 
@@ -283,12 +316,29 @@ def upload_organization_document():
             if getattr(insert_resp, "data", None):
                 return jsonify({"document_id": doc_id, "public_url": public_url}), 201
             else:
-                logger.warning("Document uploaded but DB insert returned no data: %s", insert_resp)
-                return jsonify({"document_id": doc_id, "public_url": public_url, "warning": "DB insert may have failed"}), 201
+                logger.warning(
+                    "Document uploaded but DB insert returned no data: %s", insert_resp
+                )
+                return jsonify(
+                    {
+                        "document_id": doc_id,
+                        "public_url": public_url,
+                        "warning": "DB insert may have failed",
+                    }
+                ), 201
         except Exception as e:
-            logger.exception("Failed to persist document record using add_organization_document: %s", e)
+            logger.exception(
+                "Failed to persist document record using add_organization_document: %s",
+                e,
+            )
             # Still return uploaded URL but surface the persistence issue
-            return jsonify({"document_id": doc_id, "public_url": public_url, "warning": "DB insert failed"}), 201
+            return jsonify(
+                {
+                    "document_id": doc_id,
+                    "public_url": public_url,
+                    "warning": "DB insert failed",
+                }
+            ), 201
 
     except Exception as e:
         logger.exception("Unexpected error in upload endpoint: %s", e)

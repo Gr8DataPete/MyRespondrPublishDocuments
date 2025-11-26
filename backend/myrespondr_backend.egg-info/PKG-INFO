@@ -6,3 +6,6 @@ Requires-Dist: Flask>=3.0
 Requires-Dist: flask-cors>=3.0
 Requires-Dist: requests>=2.0
 Requires-Dist: python-dotenv>=1.0
+Requires-Dist: pytest>=7.0
+Requires-Dist: pytest-cov>=4.0
+Requires-Dist: ruff>=0.12

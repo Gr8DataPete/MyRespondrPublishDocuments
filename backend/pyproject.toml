@@ -9,6 +9,7 @@ dependencies = [
   "python-dotenv>=1.0",
   "pytest>=7.0",
   "pytest-cov>=4.0",
+  "ruff>=0.12"
 ]
 
 [build-system]

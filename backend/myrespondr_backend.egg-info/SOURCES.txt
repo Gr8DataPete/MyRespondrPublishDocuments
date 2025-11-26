@@ -6,3 +6,4 @@ myrespondr_backend.egg-info/SOURCES.txt
 myrespondr_backend.egg-info/dependency_links.txt
 myrespondr_backend.egg-info/requires.txt
 myrespondr_backend.egg-info/top_level.txt
+tests/test_smoke.py
