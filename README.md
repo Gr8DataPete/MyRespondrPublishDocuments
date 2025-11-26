@@ -22,7 +22,7 @@
 	```powershell
 	cd backend
 	uv sync
-	uv run pythonapp.py
+	uv run python app.py
 	```
 
 	Note: The above backend commands are provided as requested. If your backend entrypoint is `app.py` (the repository contains `app.py`), run:
