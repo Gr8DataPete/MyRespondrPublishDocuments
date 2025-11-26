@@ -4,6 +4,8 @@ import React, { useState } from "react";
 // POST /api/organizations/me/documents
 
 export default function OrganizationDocumentUploader() {
+  // Read API base from injected env-config at runtime so frontend can talk to a separate backend
+  const API_BASE = (window as any).__UPLOAD_DOC_ENV?.API_URL || ''
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -26,17 +28,34 @@ export default function OrganizationDocumentUploader() {
       form.append("file", file);
       form.append("description", "Uploaded from OrganizationDocumentUploader");
 
-      const resp = await fetch("/api/organizations/me/documents", {
+      // Attach Authorization header with access token if present in session
+      const storedSession = (window.sessionStorage && sessionStorage.getItem('upload_session')) ? JSON.parse(sessionStorage.getItem('upload_session') || '{}') : null
+      const accessToken = storedSession?.access_token || storedSession?.accessToken || null
+      const headers: Record<string, string> = {}
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
+      const resp = await fetch(`${API_BASE}/api/organizations/me/documents`, {
         method: "POST",
         body: form,
         credentials: "include",
+        headers,
       });
 
-      const data = await resp.json();
+      let data: any = null
+      let text: string | null = null
+      try {
+        data = await resp.json()
+      } catch (e) {
+        text = await resp.text().catch(() => null)
+        console.warn('Non-JSON upload response', e)
+      }
+      console.log('[OrganizationDocumentUploader] upload response', { status: resp.status, data, text })
       if (!resp.ok) {
-        setError(data.error || JSON.stringify(data));
+        if (data && data.error) setError(String(data.error))
+        else if (text) setError(text)
+        else setError(`Upload failed (status ${resp.status})`)
       } else {
-        setResult(data);
+        setResult(data)
       }
     } catch (e: any) {
       setError(e.message || String(e));

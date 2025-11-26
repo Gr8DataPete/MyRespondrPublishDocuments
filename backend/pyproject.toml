@@ -1,0 +1,18 @@
+[project]
+name = "myrespondr-backend"
+version = "0.0.1"
+description = "Minimal pyproject to allow uv to sync backend dependencies"
+dependencies = [
+  "Flask>=3.0",
+  "flask-cors>=3.0",
+  "requests>=2.0",
+  "python-dotenv>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["app", "upload_routes"]
+

@@ -1,0 +1,9 @@
+{
+  "name": "myrespondr-frontend",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server ./ -p 5173",
+    "start-ui": "npx http-server ./ -p 5173"
+  }
+}

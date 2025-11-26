@@ -1,16 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Upload Document — Sign In</title>
     <style>
       body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:#f7fafc; color:#0f172a; }
       .card { max-width:640px; margin:48px auto; background:white; padding:20px; border-radius:8px; box-shadow:0 6px 20px rgba(2,6,23,0.08); }
-      label { display:block; font-size:13px; margin-top:12px; color:#334155; }
-      input { width:100%; padding:10px 12px; margin-top:6px; border:1px solid #e2e8f0; border-radius:6px; }
-      button { margin-top:14px; padding:10px 14px; background:#2563eb; color:white; border:0; border-radius:6px; cursor:pointer; }
-      pre { background:#0b1220; color:#e6eef8; padding:12px; border-radius:6px; overflow:auto; }
+      label { display:block; margin-top:12px; font-weight:600; color:#0f172a }
+      input[type="email"], input[type="password"], input[type="file"] { width:100%; padding:8px; margin-top:6px; box-sizing:border-box }
+      button { padding:8px 12px; border:none; background:#2563eb; color:white; border-radius:6px; cursor:pointer }
+      button[disabled] { opacity:0.6; cursor:default }
     </style>
   </head>
   <body>
@@ -20,10 +19,10 @@
 
       <label>Supabase URL</label>
       <label>Supabase Anon Key</label>
-        <div id="supabase-config-area">
-          <p style="margin:0 0 8px 0;color:#475569">Supabase configuration is loaded from local `.env`.</p>
-          <div id="supabase-config-status" style="font-size:13px;color:#334155">(loading config...)</div>
-        </div>
+      <div id="supabase-config-area">
+        <p style="margin:0 0 8px 0;color:#475569">Supabase configuration is loaded from local `.env`.</p>
+        <div id="supabase-config-status" style="font-size:13px;color:#334155">(loading config...)</div>
+      </div>
 
       <label>Email</label>
       <input id="email" type="email" placeholder="you@example.com" />
@@ -31,12 +30,13 @@
       <label>Password</label>
       <input id="password" type="password" placeholder="password" />
 
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
         <button id="signin">Sign in</button>
         <button id="clear" style="background:#475569">Clear</button>
       </div>
 
       <div id="status" style="margin-top:16px"></div>
+
       <div id="home" style="display:none; margin-top:18px">
         <h3 id="greeting"></h3>
         <div style="margin-top:12px">
@@ -58,10 +58,12 @@
       // Display config status from generated env-config
       try {
         const statusEl = el('supabase-config-status')
+        // API base for separate frontend/backend
+        const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
         if (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.SUPABASE_URL && window.__UPLOAD_DOC_ENV.SUPABASE_KEY) {
-          statusEl.textContent = 'Using configuration from .env (loaded). Supabase URL and Key hidden.'
+          statusEl.textContent = 'Using configuration from env-config.js. Supabase URL and Key hidden.'
         } else {
-          statusEl.textContent = 'No configuration found. Please generate env-config.js or provide SUPABASE_URL and SUPABASE_KEY.'
+          statusEl.textContent = 'No Supabase configuration found. Please generate env-config.js or provide SUPABASE_URL and SUPABASE_KEY.'
         }
       } catch (e) {
         // ignore
@@ -83,7 +85,9 @@
         try {
           status.textContent = 'Signing in (server)...'
           console.log('[upload_document frontend] Sending /api/signin request', { email })
-          const resp = await fetch('/api/signin', {
+          // Use configured API base when present so frontend can run separately from backend
+          const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
+          const resp = await fetch(API_BASE + '/api/signin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -103,10 +107,12 @@
             return
           }
 
-          // Move to home view; server still logs org_id to terminal
-          status.textContent = 'Signed in'
+          // Move to home view; server returns user, org_id and session
+          status.textContent = `Signed in as ${data.user?.email || data.user?.id} (org: ${data.org_id || 'n/a'})`
           sessionStorage.setItem('upload_user', JSON.stringify(data.user || {}))
           sessionStorage.setItem('upload_org', data.org_id || '')
+          if (data.session) sessionStorage.setItem('upload_session', JSON.stringify(data.session))
+          console.log('[upload_document frontend] sign-in response', data)
           showHome(data.user)
         } catch (err) {
           console.error('[upload_document frontend] Unexpected error in sign-in flow', err)
@@ -155,22 +161,56 @@
 
           uploadStatus.textContent = 'Uploading...'
           try {
-            const resp = await fetch('/api/organizations/me/documents', {
+            const API_BASE = (window.__UPLOAD_DOC_ENV && window.__UPLOAD_DOC_ENV.API_URL) || ''
+            // Attach Authorization header if we have a session access token
+            const storedSession = (window.sessionStorage && sessionStorage.getItem('upload_session')) ? JSON.parse(sessionStorage.getItem('upload_session')) : null
+            const accessToken = storedSession?.access_token || storedSession?.accessToken || null
+            const headers = {}
+            if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
+            // DEBUG: log what we're about to send (headers, form keys, file metadata)
+            try {
+              const keys = Array.from(form.keys())
+              const fileMeta = { name: file.name, size: file.size, type: file.type }
+              console.log('[upload_document frontend] DEBUG send', { API_BASE, headers, formKeys: keys, file: fileMeta, storedSession })
+            } catch (e) {
+              console.warn('[upload_document frontend] DEBUG failed to enumerate form/file', e)
+            }
+
+            const resp = await fetch(API_BASE + '/api/organizations/me/documents', {
               method: 'POST',
               body: form,
-              credentials: 'include'
+              credentials: 'include',
+              headers
             })
+
+            // Always read response text for debugging, then try parse JSON
+            let respText = ''
+            try {
+              respText = await resp.text()
+            } catch (e) {
+              console.warn('[upload_document frontend] failed to read response text', e)
+            }
             let data = null
-            try { data = await resp.json() } catch (e) { console.warn('Non-JSON upload response', e) }
-            console.log('[upload_document frontend] upload response', { status: resp.status, data })
+            try {
+              data = respText ? JSON.parse(respText) : null
+            } catch (e) {
+              data = null
+            }
+
+            console.log('[upload_document frontend] upload response', { status: resp.status, text: respText, json: data })
+
             if (!resp.ok) {
-              uploadStatus.textContent = (data && data.error) ? data.error : `Upload failed (status ${resp.status})`
+              // prefer server-provided message in text or JSON
+              if (data && data.error) uploadStatus.textContent = String(data.error)
+              else if (respText) uploadStatus.textContent = respText
+              else uploadStatus.textContent = `Upload failed (status ${resp.status})`
             } else {
-              uploadStatus.textContent = 'Uploaded: ' + (data.document_id || 'ok')
+              uploadStatus.textContent = 'Uploaded: ' + (data?.document_id || 'ok')
             }
           } catch (e) {
-            console.error(e)
-            uploadStatus.textContent = 'Upload error'
+            console.error('[upload_document frontend] fetch/exception', e)
+            uploadStatus.textContent = 'Upload error: ' + (e && e.message ? e.message : String(e))
           }
         })
       }
