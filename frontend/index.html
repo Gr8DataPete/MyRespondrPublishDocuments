@@ -86,8 +86,21 @@
       <div id="home" style="display: none; margin-top: 18px">
         <h3 id="greeting"></h3>
         <div style="margin-top: 12px">
-          <label>Upload Document</label>
-          <input id="uploadFile" type="file" />
+            <label>Upload Document</label>
+            <div style="margin: 8px 0">
+              <label for="plan-select" style="font-weight:600">Select Plan</label>
+              <select id="plan-select" style="margin-left:8px">
+                <option value="response_dynamic_plan">Response dynamic plan</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div id="description-options-container" style="display:none; margin-bottom:8px">
+              <label for="description-options">Description (optional):</label>
+              <input id="description-options" type="text" />
+            </div>
+
+            <input id="uploadFile" type="file" />
           <div style="margin-top: 8px">
             <button id="uploadBtn">Upload</button>
             <span
@@ -225,6 +238,12 @@
 
         // wire upload
         el("uploadBtn").addEventListener("click", async () => {
+          // read plan selection values
+          const planSelectEl = el("plan-select");
+          const planType = planSelectEl ? planSelectEl.value : "response_dynamic_plan";
+          const descriptionOptionsEl = el("description-options");
+          const descriptionVal = descriptionOptionsEl ? descriptionOptionsEl.value.trim() : "";
+
           const fileInput = el("uploadFile");
           const uploadStatus = el("uploadStatus");
           uploadStatus.textContent = "";
@@ -235,7 +254,14 @@
           const file = fileInput.files[0];
           const form = new FormData();
           form.append("file", file, file.name);
-          form.append("description", "Uploaded from UI");
+          // Append plan metadata
+          form.append("plan_type", planType);
+          // Only append description when plan is NOT 'response_dynamic_plan'
+          // For the 'Other' option the single textbox labeled "Description (options)"
+          // is used as the description field sent to the server.
+          if (planType !== "response_dynamic_plan" && descriptionVal) {
+            form.append("description", descriptionVal);
+          }
           // attach user and org IDs so the server can persist metadata
           try {
             const user = JSON.parse(
@@ -342,6 +368,18 @@
               "Upload error: " + (e && e.message ? e.message : String(e));
           }
         });
+
+        // Toggle visibility of custom plan and description based on plan selection
+        const planSelect = el("plan-select");
+        if (planSelect) {
+          planSelect.addEventListener("change", (ev) => {
+            const v = ev.target.value;
+            const descriptionOptionsContainer = el("description-options-container");
+            if (descriptionOptionsContainer) descriptionOptionsContainer.style.display = v === "other" ? "block" : "none";
+          });
+          // Trigger initial visibility
+          planSelect.dispatchEvent(new Event("change"));
+        }
       }
     </script>
   </body>

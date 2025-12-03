@@ -243,8 +243,28 @@ def upload_organization_document():
         _, ext = os.path.splitext(filename)
         ext = ext or ""
 
-        # Build storage path: orgs/<org_id>/<doc_id><ext>  (removed 'documents' segment per request)
-        storage_path = f"orgs/{org_id}/{doc_id}{ext}"
+        # Capture form items early so plan selection can influence storage path
+        try:
+            form_items = {k: request.form.get(k) for k in list(request.form.keys())}
+        except Exception:
+            form_items = {}
+
+        # Determine plan_type/plan_name from form (if provided) and build storage path accordingly.
+        # - Response dynamic plan -> orgs/<org_id>/rdp/<doc_id><ext>
+        # - Other -> orgs/<org_id>/other/<doc_id><ext>
+        try:
+            plan_type = form_items.get("plan_type") if isinstance(form_items, dict) else None
+            plan_name = form_items.get("plan_name") if isinstance(form_items, dict) else None
+        except Exception:
+            plan_type = None
+            plan_name = None
+
+        if plan_type == "response_dynamic_plan":
+            storage_path = f"orgs/{org_id}/rdp/{doc_id}{ext}"
+        elif plan_type == "other":
+            storage_path = f"orgs/{org_id}/other/{doc_id}{ext}"
+        else:
+            storage_path = f"orgs/{org_id}/{doc_id}{ext}"
 
         # Log form fields and file metadata (avoid printing full auth tokens)
         try:
@@ -270,10 +290,17 @@ def upload_organization_document():
             summary_lines.append(
                 f"  User ID: {GREEN}{form_items.get('user_id') or getattr(user_resp.user, 'id', None)}{RESET}"
             )
-            summary_lines.append(f"  Org ID: {GREEN}{org_id}{RESET}")
-            summary_lines.append(f"  Doc ID: {GREEN}{doc_id}{RESET}")
-            summary_lines.append(f"  Filename: {GREEN}{filename}{RESET}")
+                    # Log form fields and file metadata (avoid printing full auth tokens)
+                    # `form_items` was captured earlier to influence storage path.
+        
             summary_lines.append(f"  Storage Path: {GREEN}{storage_path}{RESET}")
+            # include plan info when available
+            try:
+                if form_items:
+                    pt = form_items.get("plan_type")
+                    summary_lines.append(f"  Plan Type: {GREEN}{pt}{RESET}")
+            except Exception:
+                pass
             summary_lines.append(f"  Content-Type: {GREEN}{content_type}{RESET}")
             summary_lines.append(
                 f"  File Size: {GREEN}{len(content) if content is not None else 'n/a'} bytes{RESET}"
@@ -298,10 +325,22 @@ def upload_organization_document():
 
         # Persist document record using helper
         # Prepare record matching Organization_Documents table
+        # Short doc_type mapping for storage classification: 'rdp' or 'other'
+        try:
+            if plan_type == "response_dynamic_plan":
+                doc_type = "rdp"
+            elif plan_type == "other":
+                doc_type = "other"
+            else:
+                doc_type = None
+        except Exception:
+            doc_type = None
+
         doc_record = {
             "document_id": doc_id,
             "user_id": getattr(user_resp.user, "id", None),
             "org_id": org_id,
+            "doc_type": doc_type,
             "filename": filename,
             "storage_path": storage_path,
             "bucket": DEFAULT_BUCKET,

@@ -10,6 +10,8 @@ export default function OrganizationDocumentUploader() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [planOption, setPlanOption] = useState<string>("response_dynamic_plan");
+  const [descriptionOptions, setDescriptionOptions] = useState<string>("");
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -26,7 +28,14 @@ export default function OrganizationDocumentUploader() {
     try {
       const form = new FormData();
       form.append("file", file);
-      form.append("description", "Uploaded from OrganizationDocumentUploader");
+      // Append selected plan information
+      form.append("plan_type", planOption);
+      // Only append description when plan is NOT 'response_dynamic_plan'
+      // For the 'Other' option the single textbox labeled "Description (options)"
+      // is used as the description field sent to the server.
+      if (planOption !== "response_dynamic_plan" && descriptionOptions) {
+        form.append("description", descriptionOptions);
+      }
 
       // Attach Authorization header with access token if present in session
       const storedSession =
@@ -75,6 +84,31 @@ export default function OrganizationDocumentUploader() {
   return (
     <div style={{ padding: 12 }}>
       <h3>Upload Organization Document</h3>
+      <div style={{ margin: "8px 0" }}>
+        <label htmlFor="plan-select">Select Plan:</label>
+        <select
+          id="plan-select"
+          value={planOption}
+          onChange={(e) => setPlanOption(e.target.value)}
+          style={{ marginLeft: 8 }}
+        >
+          <option value="response_dynamic_plan">Response dynamic plan</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      {planOption === "other" && (
+        <div style={{ marginBottom: 8 }}>
+          <label htmlFor="description-options">Description (optional):</label>
+          <input
+            id="description-options"
+            type="text"
+            value={descriptionOptions}
+            onChange={(e) => setDescriptionOptions(e.target.value)}
+            style={{ marginLeft: 8 }}
+          />
+        </div>
+      )}
       <input type="file" onChange={onFileChange} />
       <div style={{ marginTop: 8 }}>
         <button onClick={onUpload} disabled={!file || uploading}>
